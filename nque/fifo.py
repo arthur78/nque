@@ -210,12 +210,6 @@ class FifoQueueLmdb:
                     item_num = self._get_last_item_number(txn)
                     for item in items:
                         key = self._make_db_key(item_num)
-                        # For now use additional guardrail to not let
-                        # overwrite existing values. I suspect the above
-                        # _permit_put check is also doing that, so consider
-                        # testing and then removing that additional check.
-                        if txn.get(key) is not None:  # TODO really needed?
-                            raise TryLater("additional guardrail")
                         txn.put(key, item)
                         item_num = self._get_next_item_number(item_num)
                     self._put_last_item_number(item_num, txn)
