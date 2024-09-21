@@ -3,7 +3,7 @@ import logging
 
 import lmdb
 
-from nque.exc import TryLater
+from nque.exc import TryLater, ArgumentError, QueueError
 
 logger = logging.getLogger(__name__)
 
@@ -45,24 +45,24 @@ class FifoQueueLmdb:
         # TODO Enforce single consumer if using get/remove - set a
         #  special key in the DB.
 
-    def put(self, items: list[bytes]) -> bool:
+    def put(self, items: list[bytes]) -> None:
         """
         Put given items to the end of the queue. Each item becomes a
-        separate DB entry. Returns True on success, False otherwise.
+        separate DB entry.
 
         DB keys for items are zero-filled strings created from unsigned
         integers, e.g. '001'.
         """
         if not isinstance(items, list):
-            raise TypeError("items must be a list")
+            raise ArgumentError("items must be a list")
         if not items:
-            raise ValueError("no items")
+            raise ArgumentError("no items")
         if len(items) > self.ITEMS_MAX:
-            raise ValueError(f"too many items [max: {self.ITEMS_MAX}]")
+            raise ArgumentError(f"too many items [max: {self.ITEMS_MAX}]")
         if not all(isinstance(i, bytes) for i in items):
-            raise ValueError("items must be bytes")
+            raise ArgumentError("items must be bytes")
         if not all(len(i) <= self.ITEM_MAX for i in items):
-            raise ValueError(f"too big item [max: {self.ITEM_MAX} bytes]")
+            raise ArgumentError(f"too big item [max: {self.ITEM_MAX} bytes]")
         return self._put(items)
 
     def get(self, items_count: int = 1) -> list[bytes]:
@@ -140,11 +140,11 @@ class FifoQueueLmdb:
 
     def _validate_arg_items_count(self, items_count: int) -> None:
         if not isinstance(items_count, int):
-            raise TypeError("items count must be an integer")
+            raise ArgumentError("items count must be an integer")
         if items_count <= 0:
-            raise ValueError("items count must be > 0")
+            raise ArgumentError("items count must be > 0")
         if items_count > self.ITEMS_MAX:
-            raise ValueError(f"items count must be <= {self.ITEMS_MAX}")
+            raise ArgumentError(f"items count must be <= {self.ITEMS_MAX}")
 
     def _pop(self, items_count: int) -> list[bytes]:
         items = []
@@ -203,15 +203,19 @@ class FifoQueueLmdb:
         expected_entries_count = len(items) + current_entries_count
         return expected_entries_count < self.ITEMS_MAX
 
-    def _put(self, items: list[bytes]) -> bool:
+    def _put(self, items: list[bytes]) -> None:
         try:
             with self._env.begin(write=True) as txn:
                 if self._permit_put(items):
                     item_num = self._get_last_item_number(txn)
                     for item in items:
                         key = self._make_db_key(item_num)
-                        if txn.get(key) is not None:  # additional guardrail
-                            raise TryLater
+                        # For now use additional guardrail to not let
+                        # overwrite existing values. I suspect the above
+                        # _permit_put check is also doing that, so consider
+                        # testing and then removing that additional check.
+                        if txn.get(key) is not None:  # TODO really needed?
+                            raise TryLater("additional guardrail")
                         txn.put(key, item)
                         item_num = self._get_next_item_number(item_num)
                     self._put_last_item_number(item_num, txn)
@@ -221,12 +225,10 @@ class FifoQueueLmdb:
             logger.warning(f"put not permitted: try later")
             # Producers might want to try to repeat in a short while,
             # as by that time consumers might free-up some space.
-            return False
-        except lmdb.Error:
+            raise
+        except lmdb.Error as e:
             logger.error(f"failed to put", exc_info=True)
-            return False
-        else:
-            return True
+            raise QueueError(e)
 
     def _get_db_size(self) -> int:
         """
