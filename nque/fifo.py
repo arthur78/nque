@@ -42,12 +42,12 @@ class FifoQueueLmdb:
         self._env = lmdb.open(db_path, map_size=self._get_db_size(), max_dbs=1)
         # How many zeros to fill into the item's numeric DB key
         self._zfill = math.ceil(math.log10(self.ITEMS_MAX))
-        # TODO Enforce single consumer for if using get/remove - set a
+        # TODO Enforce single consumer if using get/remove - set a
         #  special key in the DB.
 
     def put(self, items: list[bytes]) -> bool:
         """
-        Enqueue given items to the end of the queue. Each item becomes a
+        Put given items to the end of the queue. Each item becomes a
         separate DB entry. Returns True on success, False otherwise.
 
         DB keys for items are zero-filled strings created from unsigned
@@ -63,7 +63,7 @@ class FifoQueueLmdb:
             raise ValueError("items must be bytes")
         if not all(len(i) <= self.ITEM_MAX for i in items):
             raise ValueError(f"too big item [max: {self.ITEM_MAX} bytes]")
-        return self._enqueue(items)
+        return self._put(items)
 
     def get(self, items_count: int = 1) -> list[bytes]:
         """
@@ -194,8 +194,8 @@ class FifoQueueLmdb:
         except lmdb.Error:
             logger.error(f"failed to remove", exc_info=True)
 
-    def _permit_enqueue(self, items: list[bytes]) -> bool:
-        """Whether we can permit enqueueing the given items.
+    def _permit_put(self, items: list[bytes]) -> bool:
+        """Whether we can permit putting the given items.
 
         Must be executed within a transaction.
         """
@@ -203,10 +203,10 @@ class FifoQueueLmdb:
         expected_entries_count = len(items) + current_entries_count
         return expected_entries_count < self.ITEMS_MAX
 
-    def _enqueue(self, items: list[bytes]) -> bool:
+    def _put(self, items: list[bytes]) -> bool:
         try:
             with self._env.begin(write=True) as txn:
-                if self._permit_enqueue(items):
+                if self._permit_put(items):
                     item_num = self._get_last_item_number(txn)
                     for item in items:
                         key = self._make_db_key(item_num)
@@ -218,19 +218,19 @@ class FifoQueueLmdb:
                 else:
                     raise TryLater
         except TryLater:
-            logger.warning(f"enqueue not permitted: try later")
+            logger.warning(f"put not permitted: try later")
             # Producers might want to try to repeat in a short while,
             # as by that time consumers might free-up some space.
             return False
         except lmdb.Error:
-            logger.error(f"failed to enqueue", exc_info=True)
+            logger.error(f"failed to put", exc_info=True)
             return False
         else:
             return True
 
     def _get_db_size(self) -> int:
         """
-        We have to make sure the enqueue operation will not lead us to
+        We have to make sure the 'put' operation will not lead us to
             "lmdb.MapFullError: Environment mapsize limit reached"
         exception.
 
