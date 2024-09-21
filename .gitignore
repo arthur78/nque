@@ -19,10 +19,6 @@ dist/
 # Package files
 *.jar
 
-# Maven
-target/
-dist/
-
 # JetBrains IDE
 .idea/
 
@@ -47,4 +43,9 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
+
+.python-version
+requirements.txt
+build/
+nlog.egg-info
 
