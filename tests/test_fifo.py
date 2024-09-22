@@ -1,7 +1,9 @@
 import shutil
+import threading
+import time
 import unittest
 
-from nque.exc import ArgumentError, QueueError, TryLater
+from nque.exc import ArgumentError, TryLater
 from nque.fifo import FifoQueueLmdb
 
 
@@ -55,6 +57,36 @@ class TestFifoQueueLmdb(unittest.TestCase):
 
         # Assert
         self.assertRaises(TryLater, self.queue.put, [b'overflow'])
+
+    def test_put_concurrent_threads(self):
+        """
+        Important: A single queue object MUST be shared across threads.
+        Otherwise, for example, if we create an individual queue object per
+        thread, the write transactions will not be isolated from each
+        other.
+        """
+        # Arrange
+        items_count = 10
+        threads_count = 5
+        total_items_count = items_count * threads_count
+        threads = []
+
+        def put(producer: FifoQueueLmdb):
+            for _ in range(items_count):
+                producer.put([b'item' + str(_).encode()])
+                time.sleep(0.001)
+
+        # Act
+        for i in range(threads_count):
+            t = threading.Thread(target=put, args=(self.queue,))
+            threads.append(t)
+            t.start()
+        for t in threads:
+            t.join()
+        items = self.queue.pop(items_count=total_items_count + 1)
+
+        # Assert
+        self.assertEqual(total_items_count, len(items))
 
     def test_get(self):
         # Arrange
