@@ -47,5 +47,6 @@ Thumbs.db
 .python-version
 requirements.txt
 build/
-nlog.egg-info
+nque.egg-info
 
+tests/.db/test-db*

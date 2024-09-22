@@ -45,7 +45,7 @@ class FifoQueueLmdb:
         # TODO Enforce single consumer if using get/remove - set a
         #  special key in the DB.
 
-    def put(self, items: list[bytes]) -> None:
+    def put(self, items: list[bytes] | tuple[bytes, ...]) -> None:
         """
         Put given items to the end of the queue. Each item becomes a
         separate DB entry.
@@ -53,8 +53,8 @@ class FifoQueueLmdb:
         DB keys for items are zero-filled strings created from unsigned
         integers, e.g. '001'.
         """
-        if not isinstance(items, list):
-            raise ArgumentError("items must be a list")
+        if not isinstance(items, (list, tuple)):
+            raise ArgumentError("items must be a list or tuple")
         if not items:
             raise ArgumentError("no items")
         if len(items) > self.ITEMS_MAX:
@@ -194,19 +194,24 @@ class FifoQueueLmdb:
         except lmdb.Error:
             logger.error(f"failed to remove", exc_info=True)
 
-    def _permit_put(self, items: list[bytes]) -> bool:
+    def _permit_put(self, items: list[bytes], txn: lmdb.Transaction) -> bool:
         """Whether we can permit putting the given items.
 
         Must be executed within a transaction.
         """
-        current_entries_count = self._env.stat()['entries']
-        expected_entries_count = len(items) + current_entries_count
-        return expected_entries_count < self.ITEMS_MAX
+        special_keys_count = 0
+        if txn.get(self._START_KEY) is not None:
+            special_keys_count += 1
+        if txn.get(self._END_KEY) is not None:
+            special_keys_count += 1
+        current_items_count = self._env.stat()['entries'] - special_keys_count
+        future_items_count = len(items) + current_items_count
+        return future_items_count <= self.ITEMS_MAX
 
     def _put(self, items: list[bytes]) -> None:
         try:
             with self._env.begin(write=True) as txn:
-                if self._permit_put(items):
+                if self._permit_put(items, txn):
                     item_num = self._get_last_item_number(txn)
                     for item in items:
                         key = self._make_db_key(item_num)
