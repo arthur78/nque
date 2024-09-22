@@ -43,7 +43,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
 
     def test_put_items_limit(self):
         # Arrange
-        items = [b'item' for i in range(FifoQueueLmdb.ITEMS_MAX)]
+        items = [b'item' for _ in range(FifoQueueLmdb.ITEMS_MAX)]
 
         # Act & assert
         self.assertIsNone(self.queue.put(items))
