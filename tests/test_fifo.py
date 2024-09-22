@@ -88,6 +88,16 @@ class TestFifoQueueLmdb(unittest.TestCase):
         self.assertIsNone(self.queue.remove(items_count=10))
         self.assertEqual([], self.queue.get())
 
+    def test_remove_bulk_2(self):
+        # Arrange
+        self.queue.put([b'item1', b'item2', b'item3'])
+
+        # Act & assert
+        self.assertIsNone(self.queue.remove(items_count=2))
+        self.assertEqual([b'item3'], self.queue.get())
+        self.assertIsNone(self.queue.remove())
+        self.assertEqual([], self.queue.get())
+
     def test_pop(self):
         # Arrange
         self.queue.put([b'item1', b'item2', b'item3'])
