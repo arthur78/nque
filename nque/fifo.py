@@ -188,7 +188,10 @@ class FifoQueueLmdb:
                 item_num = self._get_first_item_number(txn)
                 for i in range(items_count):
                     key = self._make_db_key(item_num)
-                    txn.delete(key)
+                    if txn.get(key) is not None:
+                        txn.delete(key)
+                    else:
+                        break
                     item_num = self._get_next_item_number(item_num)
                 self._put_first_item_number(item_num, txn)
         except lmdb.Error:
