@@ -9,6 +9,7 @@ from nque import FifoQueueLmdb
 from nque.exc import ArgumentError, TryLater
 
 from tests import suppress_loggers
+from tests.utils import lmdb_put
 
 suppress_loggers()
 current_dir = os.path.dirname(__file__)
@@ -104,7 +105,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
 
         # Act
         for i in range(processes_count):
-            p = mp.Process(target=_put, args=(self.DB_PATH, items_count))
+            p = mp.Process(target=lmdb_put, args=(self.DB_PATH, items_count))
             processes.append(p)
             p.start()
         for p in processes:
@@ -256,11 +257,3 @@ class TestFifoQueueLmdb(unittest.TestCase):
 
         # Act & assert
         self.assertIsNone(produce_and_faster_consume())
-
-
-# Will be executed in a separate processes
-def _put(db_path: str, items_count: int):
-    producer = FifoQueueLmdb(db_path)
-    for _ in range(items_count):
-        producer.put([b'item' + str(_).encode()])
-        time.sleep(0.001)
