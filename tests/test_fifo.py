@@ -88,6 +88,9 @@ class TestFifoQueueLmdb(unittest.TestCase):
         # Assert
         self.assertEqual(total_items_count, len(items))
 
+    def test_put_concurrent_processes(self):
+        self.fail()
+
     def test_get(self):
         # Arrange
         self.queue.put([b'item1', b'item2'])
@@ -97,6 +100,9 @@ class TestFifoQueueLmdb(unittest.TestCase):
         self.assertEqual([b'item1'], self.queue.get(1))
         self.assertEqual([b'item1', b'item2'], self.queue.get(2))
         self.assertEqual([b'item1', b'item2'], self.queue.get(20))
+
+    def test_remove_invalid_arg(self):
+        self.fail()
 
     def test_remove_by_one(self):
         # Arrange
@@ -130,6 +136,9 @@ class TestFifoQueueLmdb(unittest.TestCase):
         self.assertIsNone(self.queue.remove())
         self.assertEqual([], self.queue.get())
 
+    def test_pop_invalid_arg(self):
+        self.fail()
+
     def test_pop(self):
         # Arrange
         self.queue.put([b'item1', b'item2', b'item3'])
@@ -161,3 +170,6 @@ class TestFifoQueueLmdb(unittest.TestCase):
             producer.put([item])
             self.assertEqual([item], consumer.get())
             consumer.remove()
+
+    def test_put_loop_with_slow_consumer(self):
+        self.fail()
