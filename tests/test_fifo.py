@@ -1,3 +1,4 @@
+import multiprocessing as mp
 import shutil
 import threading
 import time
@@ -89,7 +90,23 @@ class TestFifoQueueLmdb(unittest.TestCase):
         self.assertEqual(total_items_count, len(items))
 
     def test_put_concurrent_processes(self):
-        self.fail()
+        # Arrange
+        items_count = 10
+        processes_count = 5
+        total_items_count = items_count * processes_count
+        processes = []
+
+        # Act
+        for i in range(processes_count):
+            p = mp.Process(target=_put, args=(self.DB_PATH, items_count))
+            processes.append(p)
+            p.start()
+        for p in processes:
+            p.join()
+        items = self.queue.pop(items_count=total_items_count + 1)
+
+        # Assert
+        self.assertEqual(total_items_count, len(items))
 
     def test_get_invalid_arg(self):
         # Act & assert
@@ -184,3 +201,11 @@ class TestFifoQueueLmdb(unittest.TestCase):
 
     def test_put_loop_with_slow_consumer(self):
         self.fail()
+
+
+# Will be executed in a separate processes
+def _put(db_path: str, items_count: int):
+    producer = FifoQueueLmdb(db_path)
+    for _ in range(items_count):
+        producer.put([b'item' + str(_).encode()])
+        time.sleep(0.001)
