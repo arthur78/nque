@@ -88,7 +88,8 @@ class FifoQueueLmdb(FifoQueue):
         return self._get(items_count)
 
     def remove(self, items_count: int = 1) -> None:
-        """Remove N=items_count items from the beginning of the queue.
+        """
+        Remove N=items_count items from the beginning of the queue.
 
         Use this method only as complimentary to the 'get' method, after the
         queue consumer has successfully processed the items obtained with

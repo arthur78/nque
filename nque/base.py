@@ -15,7 +15,8 @@ class PersistentQueue(abc.ABC):
 
     @abc.abstractmethod
     def get(self, items_count: int = 1) -> list:
-        """Return N=items_count items from the queue w/o removing.
+        """
+        Return N=items_count items from the queue w/o removing.
 
         This method should be used by a queue consumer, when it wants to
         remove the obtained items only in case it has successfully processed
