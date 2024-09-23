@@ -1,21 +1,15 @@
-import abc
 import math
 import logging
 
 import lmdb
 
 from nque.exc import TryLater, ArgumentError, QueueError
-from nque.base import PersistentQueue
+from nque.base import FifoPersistentQueue
 
 logger = logging.getLogger(__name__)
 
 
-class FifoQueue(PersistentQueue, abc.ABC):
-    """A persistent FIFO queue base class."""
-    pass
-
-
-class FifoQueueLmdb(FifoQueue):
+class FifoQueueLmdb(FifoPersistentQueue):
     """
     A persistent FIFO queue implemented using LMDB.
 

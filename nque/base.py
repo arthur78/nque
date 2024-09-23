@@ -43,3 +43,8 @@ class PersistentQueue(abc.ABC):
         will be returned.
         """
         pass
+
+
+class FifoPersistentQueue(PersistentQueue, abc.ABC):
+    """A persistent FIFO queue base class."""
+    pass

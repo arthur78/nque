@@ -1,16 +1,22 @@
 import multiprocessing as mp
+import os
 import shutil
 import threading
 import time
 import unittest
 
+from nque import FifoQueueLmdb
 from nque.exc import ArgumentError, TryLater
-from nque.fifo import FifoQueueLmdb
+
+from tests import suppress_loggers
+
+suppress_loggers()
+current_dir = os.path.dirname(__file__)
 
 
 class TestFifoQueueLmdb(unittest.TestCase):
 
-    DB_PATH = '.db/test-db'
+    DB_PATH = os.path.join(current_dir, '.db', 'test-db')
 
     def setUp(self):
         self.queue = FifoQueueLmdb(self.DB_PATH)
@@ -199,8 +205,57 @@ class TestFifoQueueLmdb(unittest.TestCase):
             self.assertEqual([item], consumer.get())
             consumer.remove()
 
-    def test_put_loop_with_slow_consumer(self):
-        self.fail()
+    def test_producer_with_faster_get_remove_consumer(self):
+        # Arrange
+        put_batch = [b'item1', b'item2', b'item3']
+
+        def produce_and_faster_consume():
+            consume_items_count = len(put_batch) + 1
+            for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+                self.queue.put(put_batch)
+                self.queue.get(consume_items_count)
+                self.queue.remove(consume_items_count)
+
+        # Act & assert
+        self.assertIsNone(produce_and_faster_consume())
+
+    def test_producer_with_slower_get_remove_consumer(self):
+        # Arrange
+        put_batch = [b'item1', b'item2', b'item3']
+
+        def produce_and_slower_consume():
+            for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+                self.queue.put(put_batch)
+                self.queue.get()
+                self.queue.remove()
+
+        # Act & assert
+        self.assertRaises(TryLater, produce_and_slower_consume)
+
+    def test_producer_with_slower_pop_consumer(self):
+        # Arrange
+        put_batch = [b'item1', b'item2', b'item3']
+
+        def produce_and_slower_consume():
+            for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+                self.queue.put(put_batch)
+                self.queue.pop()
+
+        # Act & assert
+        self.assertRaises(TryLater, produce_and_slower_consume)
+
+    def test_producer_with_faster_pop_consumer(self):
+        # Arrange
+        put_batch = [b'item1', b'item2', b'item3']
+
+        def produce_and_faster_consume():
+            consume_items_count = len(put_batch) + 1
+            for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+                self.queue.put(put_batch)
+                self.queue.pop(consume_items_count)
+
+        # Act & assert
+        self.assertIsNone(produce_and_faster_consume())
 
 
 # Will be executed in a separate processes
