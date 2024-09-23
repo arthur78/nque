@@ -39,6 +39,8 @@ class FifoQueueLmdb(FifoPersistentQueue):
     _START_KEY = b'start'
     _END_KEY = b'end'
 
+    __slots__ = ('_env', '_zfill')
+
     def __init__(self, db_path: str) -> None:
         self._env = lmdb.open(db_path, map_size=self._get_db_size(), max_dbs=1)
         # How many zeros to fill into the item's numeric DB key
