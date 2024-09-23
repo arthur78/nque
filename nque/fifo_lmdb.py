@@ -164,8 +164,9 @@ class FifoQueueLmdb(FifoPersistentQueue):
                         break
                 self._put_first_item_number(item_num, txn)
                 return items
-        except lmdb.Error:
+        except lmdb.Error as e:
             logger.error(f"failed to pop", exc_info=True)
+            raise QueueError(e)
 
     def _get(self, items_count: int) -> list[bytes]:
         items = []
@@ -181,8 +182,9 @@ class FifoQueueLmdb(FifoPersistentQueue):
                     else:
                         break
                 return items
-        except lmdb.Error:
+        except lmdb.Error as e:
             logger.error(f"failed to get", exc_info=True)
+            raise QueueError(e)
 
     def _remove(self, items_count: int) -> None:
         try:
@@ -196,8 +198,9 @@ class FifoQueueLmdb(FifoPersistentQueue):
                         break
                     item_num = self._get_next_item_number(item_num)
                 self._put_first_item_number(item_num, txn)
-        except lmdb.Error:
+        except lmdb.Error as e:
             logger.error(f"failed to remove", exc_info=True)
+            raise QueueError(e)
 
     def _permit_put(self, items: list[bytes], txn: lmdb.Transaction) -> bool:
         """Whether we can permit putting the given items.
