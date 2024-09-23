@@ -91,6 +91,17 @@ class TestFifoQueueLmdb(unittest.TestCase):
     def test_put_concurrent_processes(self):
         self.fail()
 
+    def test_get_invalid_arg(self):
+        # Act & assert
+        self.assertRaises(ArgumentError, self.queue.get, '1')
+        self.assertRaises(ArgumentError, self.queue.get, 0)
+        self.assertRaises(ArgumentError, self.queue.get, -1)
+        self.assertRaises(ArgumentError, self.queue.get, 1001)
+        self.assertRaises(ArgumentError, self.queue.get, [])
+        self.assertRaises(ArgumentError, self.queue.get, {})
+        self.assertRaises(ArgumentError, self.queue.get, ())
+        self.assertRaises(ArgumentError, self.queue.get, lambda: True)
+
     def test_get(self):
         # Arrange
         self.queue.put([b'item1', b'item2'])
@@ -102,7 +113,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
         self.assertEqual([b'item1', b'item2'], self.queue.get(20))
 
     def test_remove_invalid_arg(self):
-        self.fail()
+        self.test_get_invalid_arg()
 
     def test_remove_by_one(self):
         # Arrange
@@ -137,7 +148,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
         self.assertEqual([], self.queue.get())
 
     def test_pop_invalid_arg(self):
-        self.fail()
+        self.test_get_invalid_arg()
 
     def test_pop(self):
         # Arrange
