@@ -65,7 +65,9 @@ class FifoQueueLmdb(FifoPersistentQueue):
         if not all(isinstance(i, bytes) for i in items):
             raise ArgumentError("items must be bytes")
         if not all(len(i) <= self.ITEM_MAX for i in items):
-            raise ArgumentError(f"too big item [max: {self.ITEM_MAX} bytes]")
+            raise ArgumentError(
+                f"at least one item is too big [max allowed size: "
+                f"{self.ITEM_MAX} bytes]")
         return self._put(items)
 
     def get(self, items_count: int = 1) -> list[bytes]:
