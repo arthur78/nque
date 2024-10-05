@@ -175,7 +175,7 @@ class FifoQueueLmdb(FifoPersistentQueue):
     def _get(self, items_count: int) -> list[bytes]:
         items = []
         try:
-            with self._env.begin(write=True) as txn:
+            with self._env.begin(write=False) as txn:
                 item_num = self._get_first_item_number(txn)
                 for i in range(items_count):
                     key = self._make_db_key(item_num)
