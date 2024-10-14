@@ -3,7 +3,7 @@ import logging
 
 import lmdb
 
-from nque.exc import TryLater, ArgumentError, QueueError
+from nque.exc import TryLater, QueueError
 from nque.base import FifoPersistentQueue
 
 logger = logging.getLogger(__name__)
@@ -29,12 +29,6 @@ class FifoQueueLmdb(FifoPersistentQueue):
     allows only one writer at a time.
     """
 
-    # Assumed maximum size of a queue item in bytes
-    ITEM_MAX = 20 * 1024
-
-    # Set the maximum number of allowed items in a queue
-    ITEMS_MAX = 1_000
-
     # Keys to hold the numbers of first and last items
     _START_KEY = b'start'
     _END_KEY = b'end'
@@ -47,75 +41,6 @@ class FifoQueueLmdb(FifoPersistentQueue):
         self._zfill = math.ceil(math.log10(self.ITEMS_MAX))
         # TODO Enforce single consumer if using get/remove - set a
         #  special key in the DB.
-
-    def put(self, items: list[bytes] | tuple[bytes, ...]) -> None:
-        """
-        Put given items to the end of the queue. Each item becomes a
-        separate DB entry.
-
-        DB keys for items are zero-filled strings created from unsigned
-        integers, e.g. '001'.
-        """
-        if not isinstance(items, (list, tuple)):
-            raise ArgumentError("items must be a list or tuple")
-        if not items:
-            raise ArgumentError("no items")
-        if len(items) > self.ITEMS_MAX:
-            raise ArgumentError(f"too many items [max: {self.ITEMS_MAX}]")
-        if not all(isinstance(i, bytes) for i in items):
-            raise ArgumentError("items must be bytes")
-        if not all(len(i) <= self.ITEM_MAX for i in items):
-            raise ArgumentError(
-                f"at least one item is too big [max allowed size: "
-                f"{self.ITEM_MAX} bytes]")
-        return self._put(items)
-
-    def get(self, items_count: int = 1) -> list[bytes]:
-        """
-        Return N=items_count items from the beginning of the queue
-        w/o actual removing the returned items from the queue.
-
-        This method should be used by a queue consumer, when it wants to
-        remove the obtained items only in case it has successfully processed
-        them.
-
-        If the number of items in the queue is M, and M < N, then M items
-        will be returned.
-        """
-        self._validate_arg_items_count(items_count)
-        return self._get(items_count)
-
-    def remove(self, items_count: int = 1) -> None:
-        """
-        Remove N=items_count items from the beginning of the queue.
-
-        Use this method only as complimentary to the 'get' method, after the
-        queue consumer has successfully processed the items obtained with
-        'get'.
-
-        Note, however, that the items_count can differ from the one used
-        previously for 'get', because it might have returned fewer items.
-
-        For example:
-            0 <= len(queue.get(100)) <= 100
-
-        Thus, a proper removal is the consumer's responsibility.
-        """
-        self._validate_arg_items_count(items_count)
-        self._remove(items_count)
-
-    def pop(self, items_count: int = 1) -> list[bytes]:
-        """
-        Pop N=items_count items from the beginning of the queue.
-
-        This is a get-remove operation done at once within a single
-        transaction.
-
-        If the number of items in the queue is M, and M < N, then M items
-        will be returned.
-        """
-        self._validate_arg_items_count(items_count)
-        return self._pop(items_count)
 
     @classmethod
     def _get_first_item_number(cls, txn: lmdb.Transaction) -> int:
@@ -144,15 +69,16 @@ class FifoQueueLmdb(FifoPersistentQueue):
     ) -> None:
         txn.put(cls._END_KEY, str(item_num).encode())
 
-    def _validate_arg_items_count(self, items_count: int) -> None:
-        if not isinstance(items_count, int):
-            raise ArgumentError("items count must be an integer")
-        if items_count <= 0:
-            raise ArgumentError("items count must be > 0")
-        if items_count > self.ITEMS_MAX:
-            raise ArgumentError(f"items count must be <= {self.ITEMS_MAX}")
-
     def _pop(self, items_count: int) -> list[bytes]:
+        """
+        Pop N=items_count items from the beginning of the queue.
+
+        This is a get-remove operation done at once within a single
+        transaction.
+
+        If the number of items in the queue is M, and M < N, then M items
+        will be returned.
+        """
         items = []
         try:
             with self._env.begin(write=True) as txn:
@@ -173,6 +99,17 @@ class FifoQueueLmdb(FifoPersistentQueue):
             raise QueueError(e)
 
     def _get(self, items_count: int) -> list[bytes]:
+        """
+        Return N=items_count items from the beginning of the queue
+        w/o actual removing the returned items from the queue.
+
+        This method should be used by a queue consumer, when it wants to
+        remove the obtained items only in case it has successfully processed
+        them.
+
+        If the number of items in the queue is M, and M < N, then M items
+        will be returned.
+        """
         items = []
         try:
             with self._env.begin(write=False) as txn:
@@ -191,6 +128,21 @@ class FifoQueueLmdb(FifoPersistentQueue):
             raise QueueError(e)
 
     def _remove(self, items_count: int) -> None:
+        """
+        Remove N=items_count items from the beginning of the queue.
+
+        Use this method only as complimentary to the 'get' method, after the
+        queue consumer has successfully processed the items obtained with
+        'get'.
+
+        Note, however, that the items_count can differ from the one used
+        previously for 'get', because it might have returned fewer items.
+
+        For example:
+            0 <= len(queue.get(100)) <= 100
+
+        Thus, a proper removal is the consumer's responsibility.
+        """
         try:
             with self._env.begin(write=True) as txn:
                 item_num = self._get_first_item_number(txn)
@@ -221,6 +173,13 @@ class FifoQueueLmdb(FifoPersistentQueue):
         return future_items_count <= self.ITEMS_MAX
 
     def _put(self, items: list[bytes]) -> None:
+        """
+        Put given items to the end of the queue. Each item becomes a
+        separate DB entry.
+
+        DB keys for items are zero-filled strings created from unsigned
+        integers, e.g. '001'.
+        """
         try:
             with self._env.begin(write=True) as txn:
                 if self._permit_put(items, txn):
