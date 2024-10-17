@@ -10,11 +10,16 @@ class PersistentQueue(abc.ABC):
     Abstract base class.
     """
 
-    # Assumed maximum size of a queue item in bytes
-    ITEM_MAX = 20 * 1024
+    def __init__(self, items_count_max: int, item_bytes_max: int):
+        """
+        :param items_count_max:
+            Maximum allowed number of items in the queue.
 
-    # Set the maximum number of allowed items in a queue
-    ITEMS_MAX = 1_000
+        :param item_bytes_max:
+            Assumed maximum size of a queue item in bytes.
+        """
+        self.items_count_max = items_count_max
+        self._item_bytes_max = item_bytes_max
 
     def put(self, items: list[bytes] | tuple[bytes, ...]) -> None:
         """Put the given items into the queue."""
@@ -74,22 +79,24 @@ class PersistentQueue(abc.ABC):
             raise ArgumentError("items must be a list or tuple")
         if not items:
             raise ArgumentError("no items")
-        if len(items) > self.ITEMS_MAX:
-            raise ArgumentError(f"too many items [max: {self.ITEMS_MAX}]")
+        if len(items) > self.items_count_max:
+            raise ArgumentError(
+                f"too many items [max: {self.items_count_max}]")
         if not all(isinstance(i, bytes) for i in items):
             raise ArgumentError("items must be bytes")
-        if not all(len(i) <= self.ITEM_MAX for i in items):
+        if not all(len(i) <= self._item_bytes_max for i in items):
             raise ArgumentError(
                 f"at least one item is too big [max allowed size: "
-                f"{self.ITEM_MAX} bytes]")
+                f"{self._item_bytes_max} bytes]")
 
     def _validate_arg_items_count(self, items_count: int) -> None:
         if not isinstance(items_count, int):
             raise ArgumentError("items count must be an integer")
         if items_count <= 0:
             raise ArgumentError("items count must be > 0")
-        if items_count > self.ITEMS_MAX:
-            raise ArgumentError(f"items count must be <= {self.ITEMS_MAX}")
+        if items_count > self.items_count_max:
+            raise ArgumentError(
+                f"items count must be <= {self.items_count_max}")
 
 
 class FifoPersistentQueue(PersistentQueue, abc.ABC):

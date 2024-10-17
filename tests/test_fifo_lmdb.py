@@ -39,9 +39,10 @@ class TestFifoQueueLmdb(unittest.TestCase):
         self.assertRaises(ArgumentError, self.queue.put, {})
         self.assertRaises(ArgumentError, self.queue.put, True)
         self.assertRaises(ArgumentError, self.queue.put, b"item")
-        too_big_item = ((FifoQueueLmdb.ITEM_MAX + 1) * '.').encode()
+        too_big_item = ((self.queue._item_bytes_max + 1) * '.').encode()
         self.assertRaises(ArgumentError, self.queue.put, [too_big_item])
-        too_many_items = [b'item' for _ in range(FifoQueueLmdb.ITEMS_MAX + 1)]
+        too_many_items = [b'item' for _ in range(
+            self.queue.items_count_max + 1)]
         self.assertRaises(ArgumentError, self.queue.put, too_many_items)
         self.assertRaises(ArgumentError, self.queue.put, [b'item', 'item'])
 
@@ -53,14 +54,14 @@ class TestFifoQueueLmdb(unittest.TestCase):
 
     def test_put_items_limit(self):
         # Arrange
-        items = [b'item' for _ in range(FifoQueueLmdb.ITEMS_MAX)]
+        items = [b'item' for _ in range(self.queue.items_count_max)]
 
         # Act & assert
         self.assertIsNone(self.queue.put(items))
 
     def test_put_items_limit_exceeded(self):
         # Arrange & act
-        for i in range(FifoQueueLmdb.ITEMS_MAX):
+        for i in range(self.queue.items_count_max):
             self.queue.put([str(i).encode()])
 
         # Assert
@@ -189,7 +190,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
         consumer = FifoQueueLmdb(self.DB_PATH)
 
         # Act & assert
-        for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+        for i in range(2 * self.queue.items_count_max):
             item = str(i).encode()
             producer.put([item])
             self.assertEqual([item], consumer.pop())
@@ -200,7 +201,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
         consumer = FifoQueueLmdb(self.DB_PATH)
 
         # Act & assert
-        for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+        for i in range(2 * self.queue.items_count_max):
             item = str(i).encode()
             producer.put([item])
             self.assertEqual([item], consumer.get())
@@ -212,7 +213,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
 
         def produce_and_faster_consume():
             consume_items_count = len(put_batch) + 1
-            for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+            for i in range(2 * self.queue.items_count_max):
                 self.queue.put(put_batch)
                 self.queue.get(consume_items_count)
                 self.queue.remove(consume_items_count)
@@ -225,7 +226,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
         put_batch = [b'item1', b'item2', b'item3']
 
         def produce_and_slower_consume():
-            for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+            for i in range(2 * self.queue.items_count_max):
                 self.queue.put(put_batch)
                 self.queue.get()
                 self.queue.remove()
@@ -238,7 +239,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
         put_batch = [b'item1', b'item2', b'item3']
 
         def produce_and_slower_consume():
-            for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+            for i in range(2 * self.queue.items_count_max):
                 self.queue.put(put_batch)
                 self.queue.pop()
 
@@ -251,7 +252,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
 
         def produce_and_faster_consume():
             consume_items_count = len(put_batch) + 1
-            for i in range(2 * FifoQueueLmdb.ITEMS_MAX):
+            for i in range(2 * self.queue.items_count_max):
                 self.queue.put(put_batch)
                 self.queue.pop(consume_items_count)
 

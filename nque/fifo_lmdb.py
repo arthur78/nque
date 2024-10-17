@@ -33,12 +33,16 @@ class FifoQueueLmdb(FifoPersistentQueue):
     _START_KEY = b'start'
     _END_KEY = b'end'
 
-    __slots__ = ('_env', '_zfill')
-
-    def __init__(self, db_path: str) -> None:
+    def __init__(
+        self,
+        db_path: str,
+        items_count_max: int = 1_000,
+        item_bytes_max: int = 20 * 1_024
+    ) -> None:
+        super().__init__(items_count_max, item_bytes_max)
         self._env = lmdb.open(db_path, map_size=self._get_db_size(), max_dbs=1)
         # How many zeros to fill into the item's numeric DB key
-        self._zfill = math.ceil(math.log10(self.ITEMS_MAX))
+        self._zfill = math.ceil(math.log10(self.items_count_max))
         # TODO Enforce single consumer if using get/remove - set a
         #  special key in the DB.
 
@@ -170,7 +174,7 @@ class FifoQueueLmdb(FifoPersistentQueue):
             special_keys_count += 1
         current_items_count = self._env.stat()['entries'] - special_keys_count
         future_items_count = len(items) + current_items_count
-        return future_items_count <= self.ITEMS_MAX
+        return future_items_count <= self.items_count_max
 
     def _put(self, items: list[bytes]) -> None:
         """
@@ -211,7 +215,7 @@ class FifoQueueLmdb(FifoPersistentQueue):
         also the queue consumers will not be able to read, as they are also
         the queue writers.
         """
-        items_total_size_max = self.ITEMS_MAX * self.ITEM_MAX
+        items_total_size_max = self.items_count_max * self._item_bytes_max
         # Double total allowed items size to ensure we not reach DB maxsize.
         # If we do not allocate more space, then there's a good chance we
         # reach the DB max size before we reach the items max count.
@@ -224,7 +228,7 @@ class FifoQueueLmdb(FifoPersistentQueue):
 
     def _get_next_item_number(self, previous_item_num: int) -> int:
         """Return the number of the next item in the queue."""
-        if previous_item_num == self.ITEMS_MAX - 1:
+        if previous_item_num == self.items_count_max - 1:
             next_item_num = 0  # start a new cycle
         else:
             next_item_num = previous_item_num + 1
