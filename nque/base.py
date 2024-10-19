@@ -18,6 +18,7 @@ class PersistentQueue(abc.ABC):
         :param item_bytes_max:
             Assumed maximum size of a queue item in bytes.
         """
+        self._validate_arg_constraints(items_count_max, item_bytes_max)
         self.items_count_max = items_count_max
         self._item_bytes_max = item_bytes_max
 
@@ -73,6 +74,17 @@ class PersistentQueue(abc.ABC):
     @abc.abstractmethod
     def _pop(self, items_count: int) -> list:
         pass
+
+    @staticmethod
+    def _validate_arg_constraints(items_count_max, item_bytes_max) -> None:
+        if not isinstance(items_count_max, int):
+            raise ArgumentError("items_count_max must be an integer")
+        if items_count_max <= 0:
+            raise ArgumentError("items_count_max must be positive")
+        if not isinstance(item_bytes_max, int):
+            raise ArgumentError("item_bytes_max must be an integer")
+        if item_bytes_max <= 0:
+            raise ArgumentError("item_bytes_max must be positive")
 
     def _validate_arg_items(self, items):
         if not isinstance(items, (list, tuple)):

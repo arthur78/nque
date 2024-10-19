@@ -17,7 +17,7 @@ current_dir = os.path.dirname(__file__)
 
 class TestFifoQueueLmdb(unittest.TestCase):
 
-    DB_PATH = os.path.join(current_dir, '.db', 'test-db')
+    DB_PATH = os.path.join(current_dir, '.queues', 'test-fifo-lmdb')
 
     def setUp(self):
         self.queue = FifoQueueLmdb(self.DB_PATH)
@@ -66,6 +66,24 @@ class TestFifoQueueLmdb(unittest.TestCase):
 
         # Assert
         self.assertRaises(TryLater, self.queue.put, [b'overflow'])
+
+    def test_put_items_limit_exceeded_2(self):
+        # Arrange & act
+        for i in range(self.queue.items_count_max - 1):
+            self.queue.put([str(i).encode()])
+
+        # Assert
+        self.assertRaises(TryLater, self.queue.put, [b'last fit', b'overflow'])
+
+    def test_put_items_limit_exceeded_3(self):
+        # Arrange
+        items = [b'item' for _ in range(self.queue.items_count_max - 1)]
+
+        # Act
+        self.queue.put(items)
+
+        # Assert
+        self.assertRaises(TryLater, self.queue.put, items)
 
     def test_put_concurrent_threads(self):
         """

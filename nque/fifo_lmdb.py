@@ -3,7 +3,7 @@ import logging
 
 import lmdb
 
-from nque.exc import TryLater, QueueError
+from nque.exc import TryLater, QueueError, ArgumentError
 from nque.base import FifoPersistentQueue
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,8 @@ class FifoQueueLmdb(FifoPersistentQueue):
         item_bytes_max: int = 20 * 1_024
     ) -> None:
         super().__init__(items_count_max, item_bytes_max)
-        self._env = lmdb.open(db_path, map_size=self._get_db_size(), max_dbs=1)
+        self._validate_arg_db_path(db_path)
+        self._env = self._get_env(db_path)
         # How many zeros to fill into the item's numeric DB key
         self._zfill = math.ceil(math.log10(self.items_count_max))
         # TODO Enforce single consumer if using get/remove - set a
@@ -72,6 +73,9 @@ class FifoQueueLmdb(FifoPersistentQueue):
         txn: lmdb.Transaction
     ) -> None:
         txn.put(cls._END_KEY, str(item_num).encode())
+
+    def _get_env(self, db_path: str) -> lmdb.Environment:
+        return lmdb.open(db_path, map_size=self._get_db_size(), max_dbs=1)
 
     def _pop(self, items_count: int) -> list[bytes]:
         """
@@ -166,15 +170,23 @@ class FifoQueueLmdb(FifoPersistentQueue):
         """Whether we can permit putting the given items.
 
         Must be executed within a transaction.
+
+        It is assumed that the basic pre-validation of items (items count,
+        etc.) was already executed upstream.
         """
-        special_keys_count = 0
-        if txn.get(self._START_KEY) is not None:
-            special_keys_count += 1
-        if txn.get(self._END_KEY) is not None:
-            special_keys_count += 1
-        current_items_count = self._env.stat()['entries'] - special_keys_count
-        future_items_count = len(items) + current_items_count
-        return future_items_count <= self.items_count_max
+        # Projected number in the queue for the first item of given items
+        first_item_number = self._get_last_item_number(txn)
+        if txn.get(self._make_db_key(first_item_number)) is not None:
+            return False  # already taken, must not overwrite
+        items_count = len(items)
+        if items_count > 1:
+            # Projected number in the queue for the last item of given items
+            last_item_number = first_item_number
+            for i in range(items_count - 1):
+                last_item_number = self._get_next_item_number(last_item_number)
+            if txn.get(self._make_db_key(last_item_number)) is not None:
+                return False  # already taken, must not overwrite
+        return True
 
     def _put(self, items: list[bytes]) -> None:
         """
@@ -233,3 +245,11 @@ class FifoQueueLmdb(FifoPersistentQueue):
         else:
             next_item_num = previous_item_num + 1
         return next_item_num
+
+    @staticmethod
+    def _validate_arg_db_path(db_path: str) -> None:
+        if not isinstance(db_path, str):
+            raise ArgumentError(f"db_path must be a string")
+        if not db_path:
+            raise ArgumentError("db_path cannot be empty")
+        # TODO advanced validation needed? E.g. invalid chars, etc?
