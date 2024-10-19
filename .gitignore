@@ -49,4 +49,4 @@ requirements.txt
 build/
 nque.egg-info
 
-tests/.db/test-db*
+tests/.queues/test-*

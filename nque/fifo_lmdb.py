@@ -48,31 +48,41 @@ class FifoQueueLmdb(FifoPersistentQueue):
         #  special key in the DB.
 
     @classmethod
-    def _get_first_item_number(cls, txn: lmdb.Transaction) -> int:
+    def _get_first_item_number(
+        cls,
+        txn: lmdb.Transaction,
+        named_db: lmdb._Database = None  # noqa
+    ) -> int:
         """Get the number of the first queue item."""
-        return int(txn.get(cls._START_KEY, b'0').decode())
+        return int(txn.get(cls._START_KEY, b'0', db=named_db).decode())
 
     @classmethod
     def _put_first_item_number(
         cls,
         item_num: int,
-        txn: lmdb.Transaction
+        txn: lmdb.Transaction,
+        named_db: lmdb._Database = None  # noqa
     ) -> None:
         """Store the number of the first queue item."""
-        txn.put(cls._START_KEY, str(item_num).encode())
+        txn.put(cls._START_KEY, str(item_num).encode(), db=named_db)
 
     @classmethod
-    def _get_last_item_number(cls, txn: lmdb.Transaction) -> int:
+    def _get_last_item_number(
+        cls,
+        txn: lmdb.Transaction,
+        named_db: lmdb._Database = None  # noqa
+    ) -> int:
         """Get the number of the last queue item."""
-        return int(txn.get(cls._END_KEY, b'0').decode())
+        return int(txn.get(cls._END_KEY, default=b'0', db=named_db).decode())
 
     @classmethod
     def _put_last_item_number(
         cls,
         item_num: int,
-        txn: lmdb.Transaction
+        txn: lmdb.Transaction,
+        named_db: lmdb._Database = None  # noqa
     ) -> None:
-        txn.put(cls._END_KEY, str(item_num).encode())
+        txn.put(cls._END_KEY, str(item_num).encode(), db=named_db)
 
     def _get_env(self, db_path: str) -> lmdb.Environment:
         return lmdb.open(db_path, map_size=self._get_db_size(), max_dbs=1)
@@ -166,7 +176,12 @@ class FifoQueueLmdb(FifoPersistentQueue):
             logger.error(f"failed to remove", exc_info=True)
             raise QueueError(e)
 
-    def _permit_put(self, items: list[bytes], txn: lmdb.Transaction) -> bool:
+    def _permit_put(
+        self,
+        items: list[bytes],
+        txn: lmdb.Transaction,
+        named_db: lmdb._Database = None  # noqa
+    ) -> bool:
         """Whether we can permit putting the given items.
 
         Must be executed within a transaction.
@@ -175,8 +190,9 @@ class FifoQueueLmdb(FifoPersistentQueue):
         etc.) was already executed upstream.
         """
         # Projected number in the queue for the first item of given items
-        first_item_number = self._get_last_item_number(txn)
-        if txn.get(self._make_db_key(first_item_number)) is not None:
+        first_item_number = self._get_last_item_number(txn, named_db)
+        key = self._make_db_key(first_item_number)
+        if txn.get(key, db=named_db) is not None:
             return False  # already taken, must not overwrite
         items_count = len(items)
         if items_count > 1:
@@ -184,7 +200,8 @@ class FifoQueueLmdb(FifoPersistentQueue):
             last_item_number = first_item_number
             for i in range(items_count - 1):
                 last_item_number = self._get_next_item_number(last_item_number)
-            if txn.get(self._make_db_key(last_item_number)) is not None:
+            key = self._make_db_key(last_item_number)
+            if txn.get(key, db=named_db) is not None:
                 return False  # already taken, must not overwrite
         return True
 
