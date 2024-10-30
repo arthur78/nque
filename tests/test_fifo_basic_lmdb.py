@@ -5,7 +5,7 @@ import threading
 import time
 import unittest
 
-from nque import FifoQueueLmdb
+from nque import FifoBasicQueueLmdb
 from nque.exc import ArgumentError, TryLater
 
 from tests import suppress_loggers
@@ -20,7 +20,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
     DB_PATH = os.path.join(current_dir, '.queues', 'test-fifo-lmdb')
 
     def setUp(self):
-        self.queue = FifoQueueLmdb(self.DB_PATH)
+        self.queue = FifoBasicQueueLmdb(self.DB_PATH)
 
     def tearDown(self):
         shutil.rmtree(self.DB_PATH)
@@ -98,7 +98,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
         total_items_count = items_count * threads_count
         threads = []
 
-        def put(producer: FifoQueueLmdb):
+        def put(producer: FifoBasicQueueLmdb):
             for _ in range(items_count):
                 producer.put([b'item' + str(_).encode()])
                 time.sleep(0.001)
@@ -207,7 +207,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
     def test_put_pop_cycle(self):
         # Arrange
         producer = self.queue
-        consumer = FifoQueueLmdb(self.DB_PATH)
+        consumer = FifoBasicQueueLmdb(self.DB_PATH)
 
         # Act & assert
         for i in range(2 * self.queue.items_count_max):
@@ -218,7 +218,7 @@ class TestFifoQueueLmdb(unittest.TestCase):
     def test_put_get_remove_cycle(self):
         # Arrange
         producer = self.queue
-        consumer = FifoQueueLmdb(self.DB_PATH)
+        consumer = FifoBasicQueueLmdb(self.DB_PATH)
 
         # Act & assert
         for i in range(2 * self.queue.items_count_max):

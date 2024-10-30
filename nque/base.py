@@ -112,5 +112,5 @@ class PersistentQueue(abc.ABC):
 
 
 class FifoPersistentQueue(PersistentQueue, abc.ABC):
-    """A persistent FIFO queue base class."""
+    """Base class for persistent FIFO queue."""
     pass

@@ -1,13 +1,13 @@
 import logging
 import lmdb
 
-from nque import FifoQueueLmdb
+from nque import FifoBasicQueueLmdb
 from nque.exc import ArgumentError, TryLater, QueueError
 
 logger = logging.getLogger(__name__)
 
 
-class FifoMultiQueueLmdb(FifoQueueLmdb):
+class FifoMultiQueueLmdb(FifoBasicQueueLmdb):
     """Adds support for multiple internal named queues.
 
     At least two internal queues is required to instantiate this class. (For

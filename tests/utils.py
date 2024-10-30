@@ -1,14 +1,14 @@
 import time
 
-from nque import FifoPersistentQueue, FifoQueueLmdb, FifoMultiQueueLmdb
+from nque import FifoPersistentQueue, FifoBasicQueueLmdb, FifoMultiQueueLmdb
 
 
-# A helper for testing FifoQueueLmdb in separate processes
+# A helper for testing FifoBasicQueueLmdb in separate processes
 def fifo_queue_lmdb_put(db_path: str, items_count: int) -> None:
-    _produce(FifoQueueLmdb(db_path), items_count)
+    _produce(FifoBasicQueueLmdb(db_path), items_count)
 
 
-# A helper for testing FifoQueueLmdb in separate processes
+# A helper for testing FifoMultiQueueLmdb in separate processes
 def fifo_multi_queue_lmdb_put(
     db_path: str,
     items_count: int,

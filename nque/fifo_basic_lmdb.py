@@ -9,9 +9,9 @@ from nque.base import FifoPersistentQueue
 logger = logging.getLogger(__name__)
 
 
-class FifoQueueLmdb(FifoPersistentQueue):
+class FifoBasicQueueLmdb(FifoPersistentQueue):
     """
-    A persistent FIFO queue implemented using LMDB.
+    A persistent basic FIFO queue implemented using LMDB.
 
     Multiple producer processes can be running concurrently. (Read further.)
 
