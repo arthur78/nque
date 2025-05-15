@@ -17,7 +17,7 @@ class FifoBasicQueueLmdb(FifoPersistentQueue):
 
     Only one consumer process is allowed if the queue consumption is done
     using 'get/remove' methods. Running multiple consumer processes
-    concurrently in such the case will most probably lead to the queue
+    concurrently in such a case will most probably lead to the queue
     corruption and must be avoided.
 
     Multiple consumer processes can be running concurrently, but only in case
@@ -156,7 +156,7 @@ class FifoBasicQueueLmdb(FifoPersistentQueue):
         Note, however, that the items_count can differ from the one used
         previously for 'get', because it might have returned fewer items.
 
-        For example:
+        For example,
             0 <= len(queue.get(100)) <= 100
 
         Thus, a proper removal is the consumer's responsibility.

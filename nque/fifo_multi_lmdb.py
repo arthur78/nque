@@ -8,14 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 class FifoMultiQueueLmdb(FifoBasicQueueLmdb):
-    """Adds support for multiple internal named queues.
+    """
+    Adds support for multiple named internal queues.
 
-    At least two internal queues is required to instantiate this class. (For
-    a single queue just use the parent FifoQueueLmdb class.)
+    At least two internal queues are required to instantiate this class. (For
+    a single queue use the parent FifoQueueLmdb class.)
 
-    In current design, queue producers write (put) to all internal queues at
-    once in a single transaction (multicast). In opposite, queue consumers
-    (get/remove/pop) have to stick using just one particular internal queue.
+    In the current design, queue producers write (put) to all internal
+    queues at once in a single transaction (multicast). In opposite, queue
+    consumers (get/remove/pop) have to stick using a particular internal queue.
     """
 
     # Maximum number of internal queues. The current value is experimental
@@ -25,7 +26,7 @@ class FifoMultiQueueLmdb(FifoBasicQueueLmdb):
     def __init__(
         self,
         db_path: str,
-        *queues: bytes,
+        queues: tuple[bytes, ...],
         use: bytes = None,
         items_count_max: int = 1_000,
         item_bytes_max: int = 20 * 1_024

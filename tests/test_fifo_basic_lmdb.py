@@ -8,16 +8,14 @@ import unittest
 from nque import FifoBasicQueueLmdb
 from nque.exc import ArgumentError, TryLater
 
-from tests import suppress_loggers
 from tests.utils import fifo_queue_lmdb_put
 
-suppress_loggers()
-current_dir = os.path.dirname(__file__)
+CURRENT_DIR = os.path.dirname(__file__)
 
 
 class TestFifoQueueLmdb(unittest.TestCase):
 
-    DB_PATH = os.path.join(current_dir, '.queues', 'test-fifo-lmdb')
+    DB_PATH = os.path.join(CURRENT_DIR, '.queues', 'test-fifo-lmdb')
 
     def setUp(self):
         self.queue = FifoBasicQueueLmdb(self.DB_PATH)

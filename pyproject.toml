@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nque"
+version = "1.0.0"
+description = "High-performance persistent FIFO queues with LMDB backend supporting both single-queue and multi-queue broadcast patterns"
+authors = [
+    {name = "Artur Khakimau", email = "arthur78@gmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Database",
+    "Topic :: System :: Queue",
+]
+dependencies = [
+    "lmdb>=1.5.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/arthur78/nque"
+Repository = "https://github.com/arthur78/nque"
+
+[tool.setuptools]
+packages = ["nque"]
+package-dir = {""=""}
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.setuptools.packages.find]
+exclude = ["tests*"]

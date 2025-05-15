@@ -8,23 +8,21 @@ import unittest
 from nque.fifo_multi_lmdb import FifoMultiQueueLmdb
 from nque.exc import ArgumentError, TryLater, QueueError
 
-from tests import suppress_loggers
 from tests.utils import fifo_multi_queue_lmdb_put
 
-suppress_loggers()
-current_dir = os.path.dirname(__file__)
+CURRENT_DIR = os.path.dirname(__file__)
 
 
 class TestFifoMultiQueueLmdb(unittest.TestCase):
 
-    DB_PATH = os.path.join(current_dir, '.queues', 'test-fifo-multi-lmdb')
+    DB_PATH = os.path.join(CURRENT_DIR, '.queues', 'test-fifo-multi-lmdb')
 
     def setUp(self):
-        self.producer = FifoMultiQueueLmdb(self.DB_PATH, b'q1', b'q2')
+        self.producer = FifoMultiQueueLmdb(self.DB_PATH, (b'q1', b'q2'))
         self.consumer_1 = FifoMultiQueueLmdb(
-            self.DB_PATH, b'q1', b'q2', use=b'q1')
+            self.DB_PATH, (b'q1', b'q2'), use=b'q1')
         self.consumer_2 = FifoMultiQueueLmdb(
-            self.DB_PATH, b'q1', b'q2', use=b'q2')
+            self.DB_PATH, (b'q1', b'q2'), use=b'q2')
 
     def tearDown(self):
         shutil.rmtree(self.DB_PATH)
@@ -34,20 +32,20 @@ class TestFifoMultiQueueLmdb(unittest.TestCase):
 
     def test_invalid_init_args(self):
         with self.assertRaises(ArgumentError):
-            FifoMultiQueueLmdb(self.DB_PATH, b'q1')
-            FifoMultiQueueLmdb(self.DB_PATH, b'q1', use=b'q1')
+            FifoMultiQueueLmdb(self.DB_PATH, (b'q1',))
+            FifoMultiQueueLmdb(self.DB_PATH, (b'q1',), use=b'q1')
             FifoMultiQueueLmdb(self.DB_PATH, use=b'q1')
-            FifoMultiQueueLmdb(self.DB_PATH, b'q1', b'q2', use=b'q3')
-            FifoMultiQueueLmdb(self.DB_PATH, b'', b'q2', use=b'q2')
-            FifoMultiQueueLmdb(self.DB_PATH, b'q1', b'q1')
-            FifoMultiQueueLmdb(self.DB_PATH, b'q1', b'q1', use=b'q1')
-            FifoMultiQueueLmdb(self.DB_PATH, 'q1', 'q2', use=b'q1')
-            FifoMultiQueueLmdb(self.DB_PATH, 'q1', 'q2', use='q1')
-            FifoMultiQueueLmdb(self.DB_PATH, 1, 2)
+            FifoMultiQueueLmdb(self.DB_PATH, (b'q1', b'q2'), use=b'q3')
+            FifoMultiQueueLmdb(self.DB_PATH, (b'', b'q2'), use=b'q2')
+            FifoMultiQueueLmdb(self.DB_PATH, (b'q1', b'q1'))
+            FifoMultiQueueLmdb(self.DB_PATH, (b'q1', b'q1'), use=b'q1')
+            FifoMultiQueueLmdb(self.DB_PATH, ('q1', 'q2'), use=b'q1')
+            FifoMultiQueueLmdb(self.DB_PATH, ('q1', 'q2'), use='q1')
+            FifoMultiQueueLmdb(self.DB_PATH, (1, 2))
             FifoMultiQueueLmdb(self.DB_PATH, use='q1')
             FifoMultiQueueLmdb(
                 self.DB_PATH,
-                *[str(i).encode() for i in range(11)])
+                tuple([str(i).encode() for i in range(11)]))
 
     def test_put_okay(self):
         # Arrange
@@ -132,7 +130,7 @@ class TestFifoMultiQueueLmdb(unittest.TestCase):
         for i in range(processes_count):
             p = mp.Process(
                 target=fifo_multi_queue_lmdb_put,
-                args=(self.DB_PATH, items_count, b'q1', b'q2'))
+                args=(self.DB_PATH, items_count, (b'q1', b'q2')))
             processes.append(p)
             p.start()
         for p in processes:
