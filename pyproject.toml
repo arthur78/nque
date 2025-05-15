@@ -31,10 +31,6 @@ dependencies = [
 Homepage = "https://github.com/arthur78/nque"
 Repository = "https://github.com/arthur78/nque"
 
-[tool.setuptools]
-packages = ["nque"]
-package-dir = {""=""}
-
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
 
