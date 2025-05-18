@@ -4,21 +4,22 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nque"
-version = "1.0.0"
-description = "High-performance persistent FIFO queues with LMDB backend supporting both single-queue and multi-queue broadcast patterns"
+version = "1.0.1"
+description = "High-performance persistent FIFO queues with LMDB backend supporting both single-queue and multi-queue broadcast patterns."
 authors = [
     {name = "Artur Khakimau", email = "arthur78@gmail.com"},
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 license = "MIT"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Utilities",
     "Typing :: Typed",

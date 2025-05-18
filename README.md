@@ -1,6 +1,6 @@
 # nque - Persistent FIFO Queue Implementation in Python
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Python](https://img.shields.io/badge/python-3.12%2B-blue)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Coverage](https://img.shields.io/badge/coverage-92%25-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -20,7 +20,7 @@ information and usage examples, please refer to the class and method docstrings.
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.10+
 - LMDB
 
 ## Installation
@@ -36,7 +36,7 @@ pip install nque
 ```python
 from nque import FifoBasicQueueLmdb
 
-# Initialize queue with max 1000 items of 20KB each
+# Initialize queue with max 1000 items of max 20 KB each
 queue = FifoBasicQueueLmdb(
     db_path="queue", 
     items_count_max=1000,
