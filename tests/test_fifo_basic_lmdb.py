@@ -6,7 +6,7 @@ import time
 import unittest
 
 from nque import FifoBasicQueueLmdb
-from nque.exc import ArgumentError, TryLater
+from nque.exceptions import ArgumentError, TryLater
 
 from tests.utils import fifo_queue_lmdb_put
 

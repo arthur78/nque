@@ -1,6 +1,6 @@
 import abc
 
-from nque.exc import ArgumentError
+from nque.exceptions import ArgumentError
 
 
 class PersistentQueue(abc.ABC):

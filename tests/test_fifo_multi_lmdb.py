@@ -6,7 +6,7 @@ import time
 import unittest
 
 from nque.fifo_multi_lmdb import FifoMultiQueueLmdb
-from nque.exc import ArgumentError, TryLater, QueueError
+from nque.exceptions import ArgumentError, TryLater, QueueError
 
 from tests.utils import fifo_multi_queue_lmdb_put
 

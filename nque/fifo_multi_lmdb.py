@@ -2,7 +2,7 @@ import logging
 import lmdb
 
 from nque import FifoBasicQueueLmdb
-from nque.exc import ArgumentError, TryLater, QueueError
+from nque.exceptions import ArgumentError, TryLater, QueueError
 
 logger = logging.getLogger(__name__)
 

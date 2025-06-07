@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nque"
-version = "1.0.1"
+version = "1.0.2"
 description = "High-performance persistent FIFO queues with LMDB backend supporting both single-queue and multi-queue broadcast patterns."
 authors = [
     {name = "Artur Khakimau", email = "arthur78@gmail.com"},

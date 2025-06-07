@@ -3,8 +3,8 @@ import logging
 
 import lmdb
 
-from nque.exc import TryLater, QueueError, ArgumentError
 from nque.base import FifoPersistentQueue
+from nque.exceptions import TryLater, QueueError, ArgumentError
 
 logger = logging.getLogger(__name__)
 
